@@ -1,0 +1,25 @@
+body {
+  background: #6e28d9;
+  padding: 0 24px;
+  margin: 0;
+  height: 100vh;
+  color: white;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.container{
+  display:flex; flex-direction:column; align-items:center; gap:14px; text-align:center;
+}
+#webchat{
+  height: 560px;
+  width: 420px;
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 18px 40px -12px rgba(2,6,23,.35);
+  overflow: hidden;
+}
+#status{ margin:0; font-size:14px; color: rgba(255,255,255,.85); }
+@media (max-width: 480px){
+  #webchat{ width:100%; max-width:420px; height:70vh; }
+}
