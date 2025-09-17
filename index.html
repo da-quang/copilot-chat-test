@@ -1,25 +1,21 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="de">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
+    <title>Copilot Studio – Web Chat (Polling)</title>
     <link rel="stylesheet" href="src/style.css" />
-    <title>Copilot Studio – Test (Version A)</title>
   </head>
   <body>
     <main class="container">
       <h1>Hi friend, try edit me!</h1>
-
       <div id="webchat" role="main" aria-label="Chat"></div>
       <p id="status">Loading chat …</p>
       <pre id="log" style="max-width:720px;white-space:pre-wrap;word-break:break-word;"></pre>
     </main>
 
     <script>
-      // === Konfiguration ===
-      const tokenEndpoint =
-        "https://default723bc5912bab4230910fe743f63dfb.c1.environment.api.powerplatform.com/powervirtualagents/botsbyschema/cr17c_testVolHighSpeed/directline/token?api-version=2022-03-01-preview";
+      const tokenEndpoint = "https://default723bc5912bab4230910fe743f63dfb.c1.environment.api.powerplatform.com/powervirtualagents/botsbyschema/cr17c_testVolHighSpeed/directline/token?api-version=2022-03-01-preview";
 
       const styleOptions = {
         accent: "#6E28D9",
@@ -33,19 +29,17 @@
         hideUploadButton: true
       };
 
-      // === Hilfsfunktionen/Logging ===
       const statusEl = document.getElementById("status");
       const logEl = document.getElementById("log");
       const log = (...args) => {
         console.log(...args);
-        logEl.textContent +=
-          args.map(a => (typeof a === "string" ? a : JSON.stringify(a))).join(" ") + "\n";
+        logEl.textContent += args.map(a => (typeof a === "string" ? a : JSON.stringify(a))).join(" ") + "\n";
       };
+
       const qsParam = (url, name) => {
         try { return (new URL(url)).searchParams.get(name); } catch { return null; }
       };
 
-      // === Web Chat dynamisch laden (mit Fallbacks) ===
       const WEBCHAT_SOURCES = [
         "https://cdn.botframework.com/botframework-webchat/latest/webchat.js",
         "https://cdn.jsdelivr.net/npm/botframework-webchat@latest/dist/webchat.js",
@@ -79,20 +73,19 @@
         return false;
       }
 
-      // === Hauptlogik (Region + Token + Render) ===
       async function getRegionalDirectLineBase() {
         const envBase = tokenEndpoint.slice(0, tokenEndpoint.indexOf("/powervirtualagents"));
         const apiVer  = qsParam(tokenEndpoint, "api-version") || "2022-03-01-preview";
         const regUrl  = `${envBase}/powervirtualagents/regionalchannelsettings?api-version=${apiVer}`;
-
         log("GET", regUrl);
         const res = await fetch(regUrl);
         log("regionalchannelsettings status:", res.status);
         if (!res.ok) throw new Error("regionalchannelsettings failed: " + res.status);
-
         const json = await res.json();
         log("regionalchannelsettings json:", json);
-        return json?.channelUrlsById?.directline || "https://directline.botframework.com/";
+        return json && json.channelUrlsById && json.channelUrlsById.directline
+          ? json.channelUrlsById.directline
+          : "https://directline.botframework.com/";
       }
 
       async function getConversationToken() {
@@ -101,33 +94,46 @@
         log("token endpoint status:", res.status);
         if (!res.ok) throw new Error("token endpoint failed: " + res.status);
         const json = await res.json();
-        log("token json:", { ...json, token: json.token ? "***" : null });
-        if (!json?.token) throw new Error("No token in response.");
+        log("token json:", { token: json.token ? "***" : null, expires_in: json.expires_in, conversationId: json.conversationId });
+        if (!json || !json.token) throw new Error("No token in response.");
         return json.token;
       }
 
-      async function initWebChat() {
+      document.addEventListener("DOMContentLoaded", async () => {
         try {
           statusEl.textContent = "Loading Web Chat library…";
           const ok = await loadWebChatWithFallback();
-          if (!ok || !window.WebChat) {
-            throw new Error("Web Chat library could not be loaded from any source.");
-          }
+          if (!ok || !window.WebChat) throw new Error("Web Chat library could not be loaded.");
 
           statusEl.textContent = "Resolving region…";
           const directLineBase = await getRegionalDirectLineBase();
+          const directLineDomain = `${directLineBase}v3/directline`;
 
           statusEl.textContent = "Fetching token…";
           const token = await getConversationToken();
 
           statusEl.textContent = "Rendering chat…";
+
+          const store = window.WebChat.createStore(
+            {},
+            ({ dispatch }) => next => action => {
+              if (action.type === "DIRECT_LINE/CONNECT_FULFILLED") log("WebChat:", "CONNECT_FULFILLED");
+              if (action.type === "DIRECT_LINE/CONNECT_REJECTED")  log("WebChat:", "CONNECT_REJECTED");
+              if (action.type === "DIRECT_LINE/DISCONNECT_FULFILLED") log("WebChat:", "DISCONNECT_FULFILLED");
+              return next(action);
+            }
+          );
+
           const directLine = window.WebChat.createDirectLine({
             token,
-            domain: `${directLineBase}v3/directline`
+            domain: directLineDomain,
+            webSocket: false
           });
 
+          directLine.connectionStatus$.subscribe(s => log("DirectLine status:", s));
+
           window.WebChat.renderWebChat(
-            { directLine, styleOptions },
+            { directLine, styleOptions, store },
             document.getElementById("webchat")
           );
 
@@ -138,8 +144,7 @@
           statusEl.style.color = "#ef4444";
           log("Init error:", err);
         }
-      }
-
-      document.addEventListener("DOMContentLoaded", initWebChat);
+      });
     </script>
   </body>
+</html>
