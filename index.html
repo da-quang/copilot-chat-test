@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="src/style.css" />
+    <title>Copilot Studio – Test (Version A)</title>
+  </head>
+  <body>
+    <main class="container">
+      <h1>Hi friend, try edit me!</h1>
+
+      <div id="webchat" role="main" aria-label="Chat"></div>
+      <p id="status">Loading chat …</p>
+      <pre id="log" style="max-width:720px;white-space:pre-wrap;word-break:break-word;"></pre>
+    </main>
+
+    <!-- Bot Framework Web Chat -->
+    https://cdn.botframework.com/botframework-webchat/latest/webchat.js
+
+    <script>
+      const tokenEndpoint =
+        "https://default723bc5912bab4230910fe743f63dfb.c1.environment.api.powerplatform.com/powervirtualagents/botsbyschema/cr17c_testVolHighSpeed/directline/token?api-version=2022-03-01-preview";
+
+      const styleOptions = {
+        accent: "#6E28D9",
+        backgroundColor: "#ffffff",
+        bubbleBorderRadius: 12,
+        bubbleBackground: "#F8FAFC",
+        bubbleFromUserBackground: "#EDE0FF",
+        bubbleFromUserBorderRadius: 12,
+        sendBoxBackground: "#ffffff",
+        sendBoxTextColor: "#111827",
+        hideUploadButton: true
+      };
+
+      const statusEl = document.getElementById("status");
+      const logEl = document.getElementById("log");
+      const log = (...args) => {
+        console.log(...args);
+        logEl.textContent += args.map(a => (typeof a === "string" ? a : JSON.stringify(a))).join(" ") + "\n";
+      };
+
+      const qsParam = (url, name) => {
+        try { return (new URL(url)).searchParams.get(name); } catch { return null; }
+      };
+
+      async function getRegionalDirectLineBase() {
+        try {
+          const envBase = tokenEndpoint.slice(0, tokenEndpoint.indexOf("/powervirtualagents"));
+          const apiVer  = qsParam(tokenEndpoint, "api-version") || "2022-03-01-preview";
+          const regUrl  = `${envBase}/powervirtualagents/regionalchannelsettings?api-version=${apiVer}`;
+
+          log("GET", regUrl);
+          const res = await fetch(regUrl);
+          log("regionalchannelsettings status:", res.status);
+          if (!res.ok) throw new Error("regionalchannelsettings failed: " + res.status);
+
+          const json = await res.json();
+          log("regionalchannelsettings json:", json);
+          return json?.channelUrlsById?.directline || "https://directline.botframework.com/";
+        } catch (e) {
+          log("regionalchannelsettings error -> fallback to default:", e.message);
+          return "https://directline.botframework.com/";
+        }
+      }
+
+      async function getConversationToken() {
+        log("GET", tokenEndpoint);
+        const res = await fetch(tokenEndpoint);
+        log("token endpoint status:", res.status);
+        if (!res.ok) throw new Error("token endpoint failed: " + res.status);
+        const json = await res.json();
+        log("token json:", json);
+        if (!json?.token) throw new Error("No token field found in response.");
+        return json.token;
+      }
+
+      async function initWebChat() {
+        try {
+          statusEl.textContent = "Resolving region…";
+          const directLineBase = await getRegionalDirectLineBase();
+
+          statusEl.textContent = "Fetching token…";
+          const token = await getConversationToken();
+
+          statusEl.textContent = "Rendering chat…";
+          const directLine = window.WebChat.createDirectLine({
+            token,
+            domain: `${directLineBase}v3/directline`
+          });
+
+          window.WebChat.renderWebChat({ directLine, styleOptions }, document.getElementById("webchat"));
+
+          statusEl.textContent = "Ready.";
+          statusEl.style.color = "#22c55e";
+        } catch (err) {
+          statusEl.textContent = "Init error. Open DevTools for details.";
+          statusEl.style.color = "#ef4444";
+          log("Init error:", err);
+        }
+      }
+
+      document.addEventListener("DOMContentLoaded", initWebChat);
+    </script>
+  </body>
+</html>
