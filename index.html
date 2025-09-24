@@ -1,130 +1,21 @@
+
 <!DOCTYPE html>
-<html lang="de">
+<html>
   <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-
-    <title>Copilot Studio – Chat (Version A, clean)</title>
-    <link rel="stylesheet" href="src/style.css" />
-  </head>
+    <script src="https://cdn.botframework.com/botframework-webchat/latest/webchat.js/head>
   <body>
-    <main class="container">
-      <h1>Hi friend, try edit me!</h1>
-
-      <!-- Der eigentliche Chat-Container -->
-      <div id="webchat" role="main" aria-label="Chat"></div>
-    </main>
-
+    <div id="webchat" role="main"></div>
     <script>
-      // ======= Konfiguration =======
-      // Dein (funktionierender) Token-Endpoint:
-      const tokenEndpoint =
-        "https://default723bc5912bab4230910fe743f63dfb.c1.environment.api.powerplatform.com/powervirtualagents/botsbyschema/cr17c_testVolHighSpeed/directline/token?api-version=2022-03-01-preview";
-
-      // UI/Branding – kann beliebig angepasst werden
-      const styleOptions = {
-        accent: "#6E28D9",
-        backgroundColor: "#ffffff",
-        bubbleBorderRadius: 12,
-        bubbleBackground: "#F8FAFC",          // Bot-Bubbles
-        bubbleFromUserBackground: "#EDE0FF",  // User-Bubbles
-        bubbleFromUserBorderRadius: 12,
-        sendBoxBackground: "#ffffff",
-        sendBoxTextColor: "#111827",
-        hideUploadButton: true
-      };
-
-      // ======= kleine Utils =======
-      const qsParam = (url, name) => {
-        try { return (new URL(url)).searchParams.get(name); } catch { return null; }
-      };
-
-      // ======= Web Chat dynamisch laden (mit Fallbacks) =======
-      const WEBCHAT_SOURCES = [
-        "https://cdn.botframework.com/botframework-webchat/latest/webchat.js",
-        "https://cdn.jsdelivr.net/npm/botframework-webchat@latest/dist/webchat.js",
-        "https://unpkg.com/botframework-webchat@latest/dist/webchat.js"
-      ];
-
-      function loadScript(src) {
-        return new Promise((resolve, reject) => {
-          const s = document.createElement("script");
-          s.src = src;
-          s.onload = () => resolve(src);
-          s.onerror = () => reject(new Error("Failed to load " + src));
-          document.head.appendChild(s);
-        });
-      }
-
-      async function loadWebChatWithFallback() {
-        for (const src of WEBCHAT_SOURCES) {
-          try {
-            await loadScript(src);
-            if (window.WebChat) return true;
-          } catch (e) {
-            // still try next source
-          }
+      window.WebChat.renderWebChat({
+        directLine: window.WebChat.createDirectLine({ token: 'https://default723bc5912bab4230910fe743f63dfb.c1.environment.api.powerplatform.com/powervirtualagents/botsbyschema/cr17c_testVolHighSpeed/directline/token?api-version=2022-03-01-preview' }),
+        styleOptions: {
+          botAvatarInitials: '🤖',
+          userAvatarInitials: 'DU',
+          bubbleBackground: '#e0f7fa',
+          bubbleFromUserBackground: '#c8e6c9',
+          primaryFont: 'Segoe UI',
         }
-        return false;
-      }
-
-      // ======= Region + Token + Render =======
-      async function getRegionalDirectLineBase() {
-        const envBase = tokenEndpoint.slice(0, tokenEndpoint.indexOf("/powervirtualagents"));
-        const apiVer  = qsParam(tokenEndpoint, "api-version") || "2022-03-01-preview";
-        const regUrl  = `${envBase}/powervirtualagents/regionalchannelsettings?api-version=${apiVer}`;
-
-        const res = await fetch(regUrl);
-        if (!res.ok) throw new Error("regionalchannelsettings failed: " + res.status);
-        const json = await res.json();
-        return json?.channelUrlsById?.directline || "https://directline.botframework.com/";
-      }
-
-      async function getConversationToken() {
-        const res = await fetch(tokenEndpoint);
-        if (!res.ok) throw new Error("token endpoint failed: " + res.status);
-        const json = await res.json();
-        if (!json?.token) throw new Error("No token in response.");
-        return json.token;
-      }
-
-      async function initWebChat() {
-        // 1) Web Chat laden
-        const ok = await loadWebChatWithFallback();
-        if (!ok || !window.WebChat) {
-          console.error("Web Chat library could not be loaded.");
-          return;
-        }
-
-        // 2) Region/Domain + 3) Token
-        const directLineBase = await getRegionalDirectLineBase();
-        const token = await getConversationToken();
-
-        // 4) Optional: Store für Willkommens-Event oder spätere Hooks
-        const store = window.WebChat.createStore(
-          {},
-          // Debug-Hooks (unsichtbar; nur Konsole). Bei Bedarf auskommentieren:
-          // ({ dispatch }) => next => action => {
-          //   console.log("[WebChat Action]", action.type, action);
-          //   return next(action);
-          // }
-        );
-
-        // 5) Direct Line im Polling-Modus (robust bei gesperrten WebSockets)
-        const directLine = window.WebChat.createDirectLine({
-          token,
-          domain: `${directLineBase}v3/directline`,
-          webSocket: false
-        });
-
-        // 6) Render
-        window.WebChat.renderWebChat(
-          { directLine, styleOptions, store /*, locale: 'de-DE'*/ },
-          document.getElementById("webchat")
-        );
-      }
-
-      document.addEventListener("DOMContentLoaded", initWebChat);
+      }, document.getElementById('webchat'));
     </script>
   </body>
 </html>
