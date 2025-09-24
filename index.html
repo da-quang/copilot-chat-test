@@ -1,21 +1,30 @@
-
 <!DOCTYPE html>
-<html>
-  <head>
-    <script src="https://cdn.botframework.com/botframework-webchat/latest/webchat.js/head>
-  <body>
-    <div id="webchat" role="main"></div>
-    <script>
-      window.WebChat.renderWebChat({
-        directLine: window.WebChat.createDirectLine({ token: 'https://default723bc5912bab4230910fe743f63dfb.c1.environment.api.powerplatform.com/powervirtualagents/botsbyschema/cr17c_testVolHighSpeed/directline/token?api-version=2022-03-01-preview' }),
-        styleOptions: {
-          botAvatarInitials: '🤖',
-          userAvatarInitials: 'DU',
-          bubbleBackground: '#e0f7fa',
-          bubbleFromUserBackground: '#c8e6c9',
-          primaryFont: 'Segoe UI',
-        }
-      }, document.getElementById('webchat'));
-    </script>
-  </body>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mein Chatbot</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: Arial, sans-serif;
+      background-color: #ADD8E6; /* Babyblau */
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+    iframe {
+      width: 400px;
+      height: 600px;
+      border: none;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.2);
+    }
+  </style>
+</head>
+<body>
+  <iframe src="https://web.powerva.microsoft.com/environments/Default-723bc591-2bab-4230-910f-e743f63dfbc1/bots/cr17c_testVolHighSpeed/webchat2</iframe>
+</body>
 </html>
